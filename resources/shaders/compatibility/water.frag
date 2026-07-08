@@ -23,7 +23,7 @@ const float WAVE_SCALE = 6.0;                       // overall wave scale
 const float WAVE_SPEED = 0.02;                      // overall wave speed
 
 const float REFL_BUMP = 0.22;                       // reflection distortion amount
-const float REFR_BUMP = 0.01;                       // refraction distortion amount
+const float REFR_BUMP = 0.025;                      // refraction distortion amount
 
 const float RAIN_RIPPLE_STRENGTH = 2.2;             // strength of normals from rain ripples
 const float ACTOR_RIPPLE_STRENGTH = 1.8;            // strength of normals from actor ripples
