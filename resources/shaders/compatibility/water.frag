@@ -14,37 +14,37 @@
 
 // tweakables -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 
-const vec4 VISIBILITY = vec4(0.93, 0.97, 0.99, 0.8); // RGB light extinction + fog exponents
+const vec4 VISIBILITY = vec4(0.65, 0.93, 0.97, 0.2);    // RGB light extinction + fog exponents
 
-const float WAVE_STRENGTH = 0.9;                    // wave intensity
-const float RAIN_WAVE_STRENGTH = 3.8;               // intensity of extra waves added during rain
+const float WAVE_STRENGTH = 0.9;                        // wave intensity
+const float RAIN_WAVE_STRENGTH = 3.8;                   // intensity of extra waves added during rain
 
-const float WAVE_SCALE = 6.0;                       // overall wave scale
-const float WAVE_SPEED = 0.02;                      // overall wave speed
+const float WAVE_SCALE = 5.5;                           // overall wave scale
+const float WAVE_SPEED = 0.02;                          // overall wave speed
 
-const float REFL_BUMP = 0.22;                       // reflection distortion amount
-const float REFR_BUMP = 0.025;                      // refraction distortion amount
+const float REFL_BUMP = 0.22;                           // reflection distortion amount
+const float REFR_BUMP = 0.025;                          // refraction distortion amount
 
-const float RAIN_RIPPLE_STRENGTH = 2.2;             // strength of normals from rain ripples
-const float ACTOR_RIPPLE_STRENGTH = 1.8;            // strength of normals from actor ripples
+const float RAIN_RIPPLE_STRENGTH = 2.2;                 // strength of normals from rain ripples
+const float ACTOR_RIPPLE_STRENGTH = 1.8;                // strength of normals from actor ripples
 
 #if @sunlightScattering
-const float SCATTER_AMOUNT = 0.3;                   // amount of sunlight scattering
-const vec3 SCATTER_COLOUR = vec3(0.0,1.0,0.95);     // colour of sunlight scattering
-const vec3 SUN_EXT = vec3(0.45, 0.55, 0.68);        // sunlight extinction
+const float SCATTER_AMOUNT = 0.3;                       // amount of sunlight scattering
+const vec3 SCATTER_COLOUR = vec3(0.0,1.0,0.95);         // colour of sunlight scattering
+const vec3 SUN_EXT = vec3(0.45, 0.55, 0.68);            // sunlight extinction
 #endif
 
-const float SUN_SPEC_FADING_THRESHOLD = 0.15;       // visibility at which sun specularity starts to fade
-const float SPEC_HARDNESS = 256.0;                  // specular highlights hardness
-const float SPEC_BUMPINESS = 4.0;                   // surface bumpiness boost for specular
-const float SPEC_BRIGHTNESS = 2.0;                  // boosts the brightness of the specular highlights
+const float SUN_SPEC_FADING_THRESHOLD = 0.15;           // visibility at which sun specularity starts to fade
+const float SPEC_HARDNESS = 256.0;                      // specular highlights hardness
+const float SPEC_BUMPINESS = 4.0;                       // surface bumpiness boost for specular
+const float SPEC_BRIGHTNESS = 2.0;                      // boosts the brightness of the specular highlights
 
-const float BUMP_SUPPRESS_DEPTH = 300.0;            // at what water depth bumpmap will be suppressed for reflections and refractions (prevents artifacts at shores)
+const float BUMP_SUPPRESS_DEPTH = 300.0;                // at what water depth bumpmap will be suppressed for reflections and refractions (prevents artifacts at shores)
 
-const vec3 WATER_COLOR = vec3(0.09, 0.11, 0.12);    // refraction fog color / surface tint if refraction is off
+const vec3 WATER_COLOR = vec3(0.09, 0.11, 0.12);        // refraction fog color / surface tint if refraction is off
 
 #if @wobblyShores
-const float WOBBLY_SHORE_FADE_DISTANCE = 6200.0;    // fade out wobbly shores to mask precision errors, the effect is almost impossible to see at a distance
+const float WOBBLY_SHORE_FADE_DISTANCE = 6200.0;        // fade out wobbly shores to mask precision errors, the effect is almost impossible to see at a distance
 #endif
 
 // -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
@@ -86,7 +86,7 @@ uniform vec2 screenRes;
 
 void main(void)
 {
-    vec2 UV = worldPos.xy / (8192.0*5.0) * 3.0;
+    vec2 UV = worldPos.xy * 0.00008;
 
     float shadow = unshadowedLightRatio(linearDepth);
 
@@ -113,7 +113,7 @@ void main(void)
         height += (heightSamples(UV, 0.8, vec2( -0.05,  0.14), waterTimer, mat2( 1,  0,  0,  1)).xyzw * rainIntensity
                 +  heightSamples(UV, 0.8, vec2( 0.06, -0.12), waterTimer, mat2( 0,  1, -1,  0)).wxyz * rainIntensity)
                 * RAIN_WAVE_STRENGTH;
-        rainRipple = rainCombined(position.xy/1000.0 + actorRipple * 0.01, waterTimer) * RAIN_RIPPLE_STRENGTH * clamp(rainIntensity, 0.0, 1.0) * clamp(1.2 - linearDepth/3072, 0.0, 1.0);
+        rainRipple = rainCombined(position.xy * 0.001 + actorRipple * 0.01, waterTimer) * RAIN_RIPPLE_STRENGTH * clamp(rainIntensity, 0.0, 1.0) * clamp(1.2 - linearDepth * 0.0003, 0.0, 1.0);
     } else
         rainRipple = vec4(0.0);
 
@@ -135,7 +135,7 @@ void main(void)
     mat2 rotateMatrix = mat2(viewAxis, vec2(-viewAxis.y, viewAxis.x));
 
     vec4 up = vec4(0.0, 0.0, 1.0, 0.0);
-    vec2 angleTweak = vec2(1.0) + (up * gl_ModelViewMatrixInverse).xy * min(abs(cameraPos.z) / 100.0, 1.0) * 10.0;
+    vec2 angleTweak = vec2(1.0) + (up * gl_ModelViewMatrixInverse).xy * min(abs(cameraPos.z) * 0.01, 1.0) * 10.0;
 
     vec2 screenCoordsOffset = normal.xy * (screenRes.xx / screenRes.xy) * rotateMatrix;
 #if @waterRefraction
@@ -180,7 +180,7 @@ void main(void)
         refraction = clamp(refraction * 1.5, 0.0, 1.0);
     else
     {
-        vec4 visibilityExp = clamp(pow(VISIBILITY, vec4(waterDepthDistorted / 100.0)), 0.0, 1.0);
+        vec4 visibilityExp = clamp(pow(VISIBILITY, vec4(waterDepthDistorted * 0.0012)), 0.0, 1.0);
         refraction = mix(waterColor, refraction * visibilityExp.rgb, visibilityExp.a);
     }
 
