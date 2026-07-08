@@ -202,7 +202,7 @@ void main(void)
     gl_FragData[0].a = waterTransparency;
 #endif
 
-    vec3 pointSpecular = doSpecularLighting(gl_FragCoord.xy, (gl_ModelViewMatrix * vec4(position.xyz, 1.0)).xyz, normalize(gl_NormalMatrix * (specNormal * vec3(3.0, 3.0, 1.0))));
+    vec3 pointSpecular = doSpecularLighting(gl_FragCoord.xy, (gl_ModelViewMatrix * vec4(position.xyz, 1.0)).xyz, normalize(gl_NormalMatrix * (specNormal * vec3(1.7, 1.7, 1.0))));
     pointSpecular *= SPEC_BRIGHTNESS;
 
     gl_FragData[0].rgb += specular * sunSpec.rgb + simpleRain + pointSpecular;
