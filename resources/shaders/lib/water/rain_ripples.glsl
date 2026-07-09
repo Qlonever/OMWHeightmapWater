@@ -95,6 +95,7 @@ vec4 rain(vec2 uv, float time)
   ret.xy = a.xy - b.xy/2.0 + c.xy/4.0 - d.xy/8.0;
   // z should always point up
   ret.z  = a.z  + b.z /2.0 + c.z /4.0 + d.z /8.0;
+  ret.w = 0.0;
   return ret;
 #else
   return circle(f_part, i_part, adjusted_time) * 1.5;

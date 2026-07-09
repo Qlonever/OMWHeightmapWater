@@ -1,5 +1,5 @@
 # Heightmap-Based Water Shader for OpenMW 0.51
-### Ver. 1.0.0
+### Ver. 1.0.1
 This is a core shader mod for OpenMW 0.51 that attempts to improve the look of the default water.
 
 <img src="https://i.imgur.com/YdordQS.png" alt="Seyda Neen Coastline">

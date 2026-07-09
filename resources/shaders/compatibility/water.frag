@@ -17,16 +17,16 @@
 const vec4 VISIBILITY = vec4(0.65, 0.93, 0.97, 0.2);    // RGB light extinction + fog exponents
 
 const float WAVE_STRENGTH = 0.9;                        // wave intensity
-const float RAIN_WAVE_STRENGTH = 3.8;                   // intensity of extra waves added during rain
+const float RAIN_WAVE_STRENGTH = 3.5;                   // intensity of extra waves added during rain
 
 const float WAVE_SCALE = 5.5;                           // overall wave scale
 const float WAVE_SPEED = 0.02;                          // overall wave speed
 
-const float REFL_BUMP = 0.22;                           // reflection distortion amount
-const float REFR_BUMP = 0.025;                          // refraction distortion amount
+const float REFL_BUMP = 1.0;                            // reflection distortion amount
+const float REFR_BUMP = 0.15;                           // refraction distortion amount
 
 const float RAIN_RIPPLE_STRENGTH = 2.2;                 // strength of normals from rain ripples
-const float ACTOR_RIPPLE_STRENGTH = 1.8;                // strength of normals from actor ripples
+const float ACTOR_RIPPLE_STRENGTH = 1.5;                // strength of normals from actor ripples
 
 #if @sunlightScattering
 const float SCATTER_AMOUNT = 0.3;                       // amount of sunlight scattering
@@ -63,7 +63,7 @@ uniform sampler2D normalMap;
 
 vec4 heightSamples(vec2 uv, float scale, vec2 speed, float time, mat2 rotation)
 {
-    return 2.0 * texture2D(normalMap, (uv * WAVE_SCALE * scale * rotation + speed * WAVE_SPEED * WAVE_SCALE * scale * time)) - 1.0;
+    return 2.0 * texture2D(normalMap, (uv + speed * WAVE_SPEED * time) * scale * WAVE_SCALE * rotation) - 1.0;
 }
 
 uniform float osg_SimulationTime;
@@ -110,14 +110,14 @@ void main(void)
     vec4 rainRipple;
 
     if (rainIntensity > 0.01) {
-        height += (heightSamples(UV, 0.8, vec2( -0.05,  0.14), waterTimer, mat2( 1,  0,  0,  1)).xyzw * rainIntensity
-                +  heightSamples(UV, 0.8, vec2( 0.06, -0.12), waterTimer, mat2( 0,  1, -1,  0)).wxyz * rainIntensity)
+        height += (heightSamples(UV, 0.8, vec2(-0.19,  0.12), waterTimer, mat2( 1,  0,  0,  1)).xyzw * rainIntensity
+                +  heightSamples(UV, 0.8, vec2( 0.09, -0.18), waterTimer, mat2( 0,  1, -1,  0)).wxyz * rainIntensity)
                 * RAIN_WAVE_STRENGTH;
         rainRipple = rainCombined(position.xy * 0.001 + actorRipple * 0.01, waterTimer) * RAIN_RIPPLE_STRENGTH * clamp(rainIntensity, 0.0, 1.0) * clamp(1.2 - linearDepth * 0.0003, 0.0, 1.0);
     } else
         rainRipple = vec4(0.0);
 
-    vec3 normal = normalize(vec3(height.zw - height.xy + actorRipple + rainRipple.xy, 1.0));
+    vec3 normal = normalize(vec3((height.zw - height.xy + actorRipple + rainRipple.xy) * clamp(linearDepth * 0.01, 0.5, 1.0), 1.0));
 
     vec3 sunWorldDir = normalize((gl_ModelViewMatrixInverse * vec4(lcalcPosition(0).xyz, 0.0)).xyz);
     vec3 cameraPos = (gl_ModelViewMatrixInverse * vec4(0,0,0,1)).xyz;
@@ -125,29 +125,28 @@ void main(void)
 
     float sunFade = length(gl_LightModel.ambient.xyz);
 
+    if (cameraPos.z < 0.0)
+        normal *= -1.0;
+
     // fresnel
     float ior = (cameraPos.z>0.0)?(1.333/1.0):(1.0/1.333); // air to water; water to air
     float fresnel = clamp(fresnel_dielectric(viewDir, normal, ior), 0.0, 1.0);
 
-    // align normal x-axis with viewspace x-axis before doing distortion sampling
-    // this would break if the player could look precisely up or down
-    vec2 viewAxis = normalize((gl_ModelViewMatrixInverse * vec4(1.0, 0.0, 0.0, 0.0)).xy);
-    mat2 rotateMatrix = mat2(viewAxis, vec2(-viewAxis.y, viewAxis.x));
+    // I think this is basically a fixed-length raymarch
+    vec3 reflectVec = reflect(viewDir, normal) * vec3(1000.0, 1000.0, -1000.0);
+    vec3 reflectCoords = (gl_ModelViewProjectionMatrix * vec4(position.xyz + reflectVec, 1.0)).xyz;
 
-    vec4 up = vec4(0.0, 0.0, 1.0, 0.0);
-    vec2 angleTweak = vec2(1.0) + (up * gl_ModelViewMatrixInverse).xy * min(abs(cameraPos.z) * 0.01, 1.0) * 10.0;
-
-    vec2 screenCoordsOffset = normal.xy * (screenRes.xx / screenRes.xy) * rotateMatrix;
+    vec2 screenCoordsOffset = reflectCoords.xy/reflectCoords.zz * 0.5 + vec2(0.5) - screenCoords.xy;
 #if @waterRefraction
     float depthSample = linearizeDepth(sampleRefractionDepthMap(screenCoords), near, far);
     float surfaceDepth = linearDepth;
     float realWaterDepth = depthSample - surfaceDepth;  // undistorted water depth in view direction, independent of frustum
-    screenCoordsOffset *= clamp(realWaterDepth / BUMP_SUPPRESS_DEPTH, 0.0, 1.0) / max(surfaceDepth, 128) * 400.0;
-    float depthSampleDistorted = linearizeDepth(sampleRefractionDepthMap(screenCoords - screenCoordsOffset * REFR_BUMP * angleTweak), near, far);
+    screenCoordsOffset *= clamp(realWaterDepth / BUMP_SUPPRESS_DEPTH, 0.0, 1.0);
+    float depthSampleDistorted = linearizeDepth(sampleRefractionDepthMap(screenCoords - screenCoordsOffset * REFR_BUMP), near, far);
     float waterDepthDistorted = max(depthSampleDistorted - surfaceDepth, 0.0);
 #endif
     // reflection
-    vec3 reflection = sampleReflectionMap(screenCoords + screenCoordsOffset * REFL_BUMP * angleTweak).rgb;
+    vec3 reflection = sampleReflectionMap(screenCoords + screenCoordsOffset * REFL_BUMP).rgb;
 
     vec3 waterColor = WATER_COLOR * sunFade;
 
@@ -172,7 +171,7 @@ void main(void)
 
 #if @waterRefraction
     // refraction
-    vec3 refraction = sampleRefractionMap(screenCoords - screenCoordsOffset * REFR_BUMP * angleTweak).rgb;
+    vec3 refraction = sampleRefractionMap(screenCoords - screenCoordsOffset * REFR_BUMP).rgb;
     vec3 rawRefraction = refraction;
 
     // brighten up the refraction underwater
@@ -210,7 +209,7 @@ void main(void)
     // wobbly water: hard-fade into refraction texture at extremely low depth, with a wobble based on heightmap
     float viewFactor = mix(abs(viewDir.z), 1.0, 0.2);
     float verticalWaterDepth = realWaterDepth * viewFactor; // an estimate
-    float shoreOffset = verticalWaterDepth * 2.0 - height.r * 16.0 + 2.5;
+    float shoreOffset = (verticalWaterDepth - height.r * 12.0) * 4.0 + 2.5;
     float fuzzFactor = min(1.0, 1000.0 / surfaceDepth) * viewFactor;
     shoreOffset *= fuzzFactor;
     shoreOffset = clamp(mix(shoreOffset, 1.0, clamp(linearDepth / WOBBLY_SHORE_FADE_DISTANCE, 0.0, 1.0)), 0.0, 1.0);
