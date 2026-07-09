@@ -2,11 +2,14 @@
 ### Ver. 1.0.1
 This is a core shader mod for OpenMW 0.51 that attempts to improve the look of the default water.
 
-<img src="https://i.imgur.com/YdordQS.png" alt="Seyda Neen Coastline">
+https://github.com/user-attachments/assets/f38ab83f-d2fb-48fb-8623-4d8b51285b0b
+
 <details>
   <summary>Screenshots</summary>
-  <img src="https://i.imgur.com/dMKih1v.png" alt="Rain at Wolverine Hall">
-  <img src="https://i.imgur.com/koFwAHl.png" alt="Kushtashpi">
+  <img width="1920" height="1080" alt="Seyda Neen Coastline" src="https://github.com/user-attachments/assets/70265b29-b642-48a4-8298-3191b1fb7b1d" />
+  <img width="1920" height="1080" alt="Rain at Wolverine Hall" src="https://github.com/user-attachments/assets/90d80bc7-a84d-442f-aa09-05be80f916c6" />
+  <img width="1920" height="1080" alt="Kushtashpi" src="https://github.com/user-attachments/assets/7b277417-fbd4-40f0-8076-fa2b77d87c0e" />
+  <img width="1920" height="1080" alt="Vivec Waterways" src="https://github.com/user-attachments/assets/4115c7c1-858a-4767-85c4-160b80147e28" />
 </details>
 
 ## Features
