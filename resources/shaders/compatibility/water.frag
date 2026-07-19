@@ -16,10 +16,10 @@
 
 const vec4 VISIBILITY = vec4(0.65, 0.93, 0.97, 0.2);    // RGB light extinction + fog exponents
 
-const float WAVE_STRENGTH = 0.9;                        // wave intensity
-const float RAIN_WAVE_STRENGTH = 3.5;                   // intensity of extra waves added during rain
+const float WAVE_STRENGTH = 1.7;                        // wave intensity
+const float RAIN_WAVE_STRENGTH = 6.5;                   // intensity of extra waves added during rain
 
-const float WAVE_SCALE = 5.5;                           // overall wave scale
+const float WAVE_SCALE = 6.0;                           // overall wave scale
 const float WAVE_SPEED = 0.02;                          // overall wave speed
 
 const float REFL_BUMP = 1.0;                            // reflection distortion amount
@@ -209,7 +209,7 @@ void main(void)
     // wobbly water: hard-fade into refraction texture at extremely low depth, with a wobble based on heightmap
     float viewFactor = mix(abs(viewDir.z), 1.0, 0.2);
     float verticalWaterDepth = realWaterDepth * viewFactor; // an estimate
-    float shoreOffset = (verticalWaterDepth - height.r * 12.0) * 4.0 + 2.5;
+    float shoreOffset = (verticalWaterDepth - (0.5 + height.r * 0.16) * 40.0) * 4.0 + 80.0;
     float fuzzFactor = min(1.0, 1000.0 / surfaceDepth) * viewFactor;
     shoreOffset *= fuzzFactor;
     shoreOffset = clamp(mix(shoreOffset, 1.0, clamp(linearDepth / WOBBLY_SHORE_FADE_DISTANCE, 0.0, 1.0)), 0.0, 1.0);
